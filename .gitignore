@@ -1,0 +1,22 @@
+# decrypted secrets and runtime files
+runtime/
+*.dec
+*.plaintext
+
+# local env files
+.env
+.env.*
+!.env.example
+env/*.env
+!env/*.example
+
+# persistent service data
+config/pihole/etc-pihole/*
+!config/pihole/etc-pihole/.gitkeep
+
+config/pihole/etc-dnsmasq.d/*
+!config/pihole/etc-dnsmasq.d/.gitkeep
+
+# misc
+*.log
+.DS_Store
