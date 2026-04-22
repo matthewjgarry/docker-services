@@ -12,7 +12,6 @@ if [[ ! -f "./env/server01.env" ]]; then
   exit 1
 fi
 
-"${SCRIPT_DIR}/decrypt-secrets.sh"
-"${SCRIPT_DIR}/validate.sh"
+docker compose --env-file ./env/server01.env config >/dev/null
 
-docker compose --env-file ./env/server01.env up -d pihole
+echo "Compose configuration is valid."

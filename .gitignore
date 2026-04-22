@@ -17,6 +17,9 @@ config/pihole/etc-pihole/*
 config/pihole/etc-dnsmasq.d/*
 !config/pihole/etc-dnsmasq.d/.gitkeep
 
+# local backup copies
+config/pihole/etc-pihole.bak.*
+
 # misc
 *.log
 .DS_Store

@@ -12,7 +12,4 @@ if [[ ! -f "./env/server01.env" ]]; then
   exit 1
 fi
 
-"${SCRIPT_DIR}/decrypt-secrets.sh"
-"${SCRIPT_DIR}/validate.sh"
-
-docker compose --env-file ./env/server01.env up -d pihole
+docker compose --env-file ./env/server01.env down

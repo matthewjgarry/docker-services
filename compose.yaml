@@ -9,14 +9,20 @@ services:
       - "53:53/udp"
       - "80:80/tcp"
       - "443:443/tcp"
+      # - "67:67/udp"   # Uncomment if using Pi-hole as DHCP server
+      # - "123:123/udp" # Uncomment if using Pi-hole as NTP server
 
     environment:
       TZ: "${TZ}"
       FTLCONF_dns_listeningMode: "ALL"
       WEBPASSWORD_FILE: "pihole_web_password"
+      # Uncomment only if you use custom dnsmasq config files:
+      # FTLCONF_misc_etc_dnsmasq_d: "true"
 
     volumes:
       - ./config/pihole/etc-pihole:/etc/pihole
+      # Uncomment only if using custom dnsmasq config files:
+      # - ./config/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
 
     secrets:
       - pihole_web_password
