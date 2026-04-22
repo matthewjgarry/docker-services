@@ -1,6 +1,6 @@
 # 🐳 docker-services
 
-A modular, reproducible Docker stack for homelab services — focused on **secure secrets**, **clean networking**, and **automation-first deployment**.
+A modular, reproducible Docker stack for a homelab — built around **secure secrets**, **internal HTTPS**, and **automation-first deployment**.
 
 Pairs with host bootstrap repo:
 👉 https://github.com/matthewjgarry/linux-environments
@@ -9,42 +9,42 @@ Pairs with host bootstrap repo:
 
 ## 🧠 Philosophy
 
-* 🔁 **Reproducible** — rebuild from scratch reliably
-* 🔐 **Secure by default** — secrets encrypted with SOPS + age
-* 🧩 **Composable** — services follow a consistent pattern
-* 🌐 **Separated networking** — infra and apps stay isolated
-* ⚙️ **Automation-first** — scripts enforce correct state
+* 🔁 **Reproducible** — rebuild everything from scratch
+* 🔐 **Secure by default** — SOPS + age for secrets
+* 🧩 **Composable** — consistent service patterns
+* 🌐 **Layered networking** — DNS → proxy → apps
+* ⚙️ **Automated** — scripts enforce correct state
 
 ---
 
 ## 🏗️ Current Stack
 
-| Service    | Purpose                                | Network                  |
-| ---------- | -------------------------------------- | ------------------------ |
-| 🧱 Pi-hole | DNS filtering (static IP for OPNsense) | `home_network` (macvlan) |
-| 🌐 Caddy   | Reverse proxy / edge router            | `proxy_network`          |
-| 🔎 SearXNG | Private metasearch engine              | `proxy_network`          |
+| Service       | Purpose             | Notes                          |
+| ------------- | ------------------- | ------------------------------ |
+| 🧱 Pi-hole    | DNS filtering       | macvlan + static IP (OPNsense) |
+| 🌐 Caddy      | Reverse proxy + TLS | Cloudflare DNS-01              |
+| 🔎 SearXNG    | Private search      | internal HTTPS                 |
+| 🗄️ Postgres  | Database            | internal only                  |
+| ⌨️ Monkeytype | Typing app          | optional (`apps` profile)      |
 
 ---
 
-## 🌐 Networking Model
+## 🌐 Networking
 
-```id="s9g4k2"
+```text
 LAN / OPNsense
       │
-   Pi-hole (static IP)
+   Pi-hole (DNS)
       │
 Docker Host
-  ├── Caddy
-  └── SearXNG
+  ├── Caddy (TLS + routing)
+  └── Services (internal)
 ```
 
-**Key points:**
-
 * Pi-hole is **not proxied**
-* Pi-hole uses **macvlan + static IP**
-* Caddy handles **all web services**
-* Apps share an internal **proxy network**
+* Caddy handles **all HTTPS**
+* Apps live on an internal Docker network
+* Services are exposed via **internal DNS + valid certs**
 
 ---
 
@@ -55,14 +55,14 @@ Managed with:
 * 🔑 age
 * 🛡️ SOPS
 
-```id="j1x7o2"
-secrets/        → encrypted (.enc)
-runtime/        → decrypted (ignored)
+```text
+secrets/   → encrypted
+runtime/   → decrypted (ignored)
 ```
 
-Decrypt:
+Decrypt before running:
 
-```bash id="a9k2m1"
+```bash
 ./scripts/decrypt-secrets.sh
 ```
 
@@ -72,60 +72,58 @@ Decrypt:
 
 Per-host config:
 
-```bash id="q3x7w1"
+```bash
 cp env/server01.env.example env/server01.env
 ```
 
-Example:
+Example (trimmed):
 
-```dotenv id="d2m7p4"
+```dotenv
 TZ=America/New_York
 
-PIHOLE_PARENT_INTERFACE=eno1
-PIHOLE_IPV4_ADDRESS=10.42.42.11
-
-SEARXNG_HOSTNAME=search.home.arpa
-SEARXNG_BASE_URL=http://search.home.arpa:8080
-SEARXNG_SECRET=<generated>
+SEARXNG_HOSTNAME=search.wormlogic.com
+MONKEYTYPE_HOSTNAME=type.wormlogic.com
+MONKEYTYPE_API_HOSTNAME=type-api.wormlogic.com
 ```
 
 ---
 
 ## 🚀 Usage
 
-```bash id="z7m2c9"
-./scripts/up.sh        # start stack (decrypt + validate + up)
-./scripts/down.sh      # stop stack
-./scripts/validate.sh  # validate config only
+```bash
+./scripts/up.sh        # core services
+./scripts/up-apps.sh   # core + optional apps
+./scripts/down.sh      # stop everything
+./scripts/validate.sh  # config checks
 ```
 
 ---
 
 ## 🔍 Access
 
-* **Pi-hole:**
+* 🔎 SearXNG
 
-  ```id="k8x3m2"
-  http://<pihole-ip>
+  ```text
+  https://search.wormlogic.com
   ```
 
-* **SearXNG (via Caddy):**
+* ⌨️ Monkeytype
 
-  ```id="n2v9k1"
-  http://search.home.arpa:8080
+  ```text
+  https://type.wormlogic.com
   ```
 
-Requires DNS:
+Requires internal DNS (OPNsense):
 
-```id="p4l8c7"
-search.home.arpa → <docker-host-ip>
+```text
+*.wormlogic.com → <docker-host-ip>
 ```
 
 ---
 
-## 📁 Structure
+## 🧩 Structure
 
-```id="u7f3x1"
+```text
 compose.yaml
 env/
 secrets/
@@ -136,33 +134,29 @@ scripts/
 
 ---
 
-## 🧩 Pattern
+## 🧠 Patterns
 
-```id="y2q8b6"
-config/   → service config
-secrets/  → encrypted
-runtime/  → decrypted
-compose   → orchestration
-```
+* Services communicate via **Docker network**
+* No unnecessary host port exposure
+* One database/user per app (future-ready)
+* Optional services grouped via **Compose profiles**
 
 ---
 
-## ⚠️ Current State
+## ⚠️ Notes
 
-* HTTP only (`:8080`)
-* No TLS yet
-* No public exposure
-* No backup system (config only via Git)
+* Internal HTTPS via **Cloudflare DNS-01**
+* No public exposure yet (VPN planned)
+* Optional features (Firebase, email, etc.) are disabled by default
 
 ---
 
 ## 🔜 Next
 
-* 🔒 Proper HTTPS (DNS-01)
-* 🌍 Public/private domain split
-* 🔎 SearXNG tuning
-* ➕ More services (n8n, Postgres, etc.)
+* 🔐 VPN access layer
+* 🤖 n8n integration
 * 💾 Backup strategy
+* 🌍 selective public exposure
 
 ---
 
