@@ -34,3 +34,6 @@ config/caddy/config/*
 # persistent SearXNG data
 config/searxng/data/*
 !config/searxng/data/.gitkeep
+config/searxng/*.toml
+config/searxng/*.env
+config/searxng/*.bak
