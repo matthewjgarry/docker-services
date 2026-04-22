@@ -1,0 +1,10 @@
+[Unit]
+Description=Run docker-services startup validation shortly after boot
+
+[Timer]
+OnBootSec=3min
+Persistent=true
+Unit=docker-services-startup-check.service
+
+[Install]
+WantedBy=timers.target

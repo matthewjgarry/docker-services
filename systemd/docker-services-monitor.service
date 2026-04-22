@@ -1,0 +1,11 @@
+[Unit]
+Description=Monitor docker-services containers and report state changes to Discord
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=lightweight
+WorkingDirectory=/home/lightweight/docker-services
+Environment=MACHINE_ID=server01
+ExecStart=/home/lightweight/docker-services/scripts/monitor-containers.sh

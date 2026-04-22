@@ -12,6 +12,6 @@ if [[ ! -f "./env/server01.env" ]]; then
   exit 1
 fi
 
-docker compose --env-file ./env/server01.env config >/dev/null
+docker compose --env-file ./env/server01.env --profile apps config >/dev/null
 
 echo "Compose configuration is valid."

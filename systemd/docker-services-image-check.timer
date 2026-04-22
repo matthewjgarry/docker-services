@@ -1,0 +1,11 @@
+[Unit]
+Description=Run docker-services image update check daily
+
+[Timer]
+OnBootSec=15min
+OnUnitActiveSec=24h
+Persistent=true
+Unit=docker-services-image-check.service
+
+[Install]
+WantedBy=timers.target

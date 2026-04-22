@@ -48,3 +48,8 @@ config/monkeytype/mongodb/*
 
 config/monkeytype/redis/*
 !config/monkeytype/redis/.gitkeep
+
+# monitor state
+runtime/server01/monitor/*
+!runtime/server01/monitor/.gitkeep
+

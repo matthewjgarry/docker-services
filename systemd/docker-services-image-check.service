@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for newer docker-services images and notify
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=lightweight
+WorkingDirectory=/home/lightweight/docker-services
+Environment=MACHINE_ID=server01
+ExecStart=/home/lightweight/docker-services/scripts/image-check.sh

@@ -1,0 +1,11 @@
+[Unit]
+Description=Run docker-services monitor every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+Persistent=true
+Unit=docker-services-monitor.service
+
+[Install]
+WantedBy=timers.target
