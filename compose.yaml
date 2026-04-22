@@ -7,8 +7,6 @@ services:
     ports:
       - "53:53/tcp"
       - "53:53/udp"
-      - "80:80/tcp"
-      - "443:443/tcp"
       # - "67:67/udp"   # Uncomment if using Pi-hole as DHCP server
       # - "123:123/udp" # Uncomment if using Pi-hole as NTP server
 
@@ -36,21 +34,30 @@ services:
 
   caddy:
     container_name: caddy
-    image: caddy:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
     restart: unless-stopped
 
     ports:
-      - "8080:80"
-      - "8443:443"
+      - "80:80"
+      - "443:443"
 
     environment:
       TZ: "${TZ}"
       SEARXNG_HOSTNAME: "${SEARXNG_HOSTNAME}"
 
+    command: >
+      sh -c 'export CLOUDFLARE_API_TOKEN="$$(cat /run/secrets/cloudflare_api_token)" &&
+             exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./config/caddy/data:/data
       - ./config/caddy/config:/config
+
+    secrets:
+      - cloudflare_api_token
 
     networks:
       - proxy_network
@@ -71,10 +78,102 @@ services:
 
     networks:
       - proxy_network
+  postgres:
+    container_name: postgres
+    image: postgres:latest
+    restart: unless-stopped
+
+    env_file:
+      - ./runtime/server01/secrets/postgres.env
+
+    volumes:
+      - ./config/postgres/data:/var/lib/postgresql
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+    networks:
+      - proxy_network
+
+  monkeytype-mongodb:
+    container_name: monkeytype-mongodb
+    image: mongo:latest
+    restart: unless-stopped
+    profiles: ["apps"]
+
+    volumes:
+      - ./config/monkeytype/mongodb:/data/db
+
+    networks:
+      - proxy_network
+
+  monkeytype-redis:
+    container_name: monkeytype-redis
+    image: redis:latest
+    restart: unless-stopped
+    profiles: ["apps"]
+
+    volumes:
+      - ./config/monkeytype/redis:/data
+
+    networks:
+      - proxy_network
+
+  monkeytype-backend:
+    container_name: monkeytype-backend
+    image: monkeytype/monkeytype-backend:latest
+    restart: unless-stopped
+    profiles: ["apps"]
+
+    depends_on:
+      - monkeytype-mongodb
+      - monkeytype-redis
+
+    environment:
+      DB_NAME: "monkeytype"
+      DB_URI: "mongodb://monkeytype-mongodb:27017"
+      REDIS_URI: "redis://monkeytype-redis:6379"
+      FRONTEND_URL: "${MONKEYTYPE_FRONTEND_URL}"
+      RECAPTCHA_SECRET: "${MONKEYTYPE_RECAPTCHA_SECRET}"
+      EMAIL_HOST: "${MONKEYTYPE_EMAIL_HOST}"
+      EMAIL_PORT: "${MONKEYTYPE_EMAIL_PORT}"
+      EMAIL_USER: "${MONKEYTYPE_EMAIL_USER}"
+      EMAIL_PASS: "${MONKEYTYPE_EMAIL_PASS}"
+
+    networks:
+      - proxy_network
+
+  monkeytype-frontend:
+    container_name: monkeytype-frontend
+    image: monkeytype/monkeytype-frontend:latest
+    restart: unless-stopped
+    profiles: ["apps"]
+
+    depends_on:
+      - monkeytype-backend
+
+    environment:
+      MONKEYTYPE_BACKENDURL: "${MONKEYTYPE_BACKEND_URL}"
+      FIREBASE_APIKEY: "${MONKEYTYPE_FIREBASE_APIKEY}"
+      FIREBASE_AUTHDOMAIN: "${MONKEYTYPE_FIREBASE_AUTHDOMAIN}"
+      FIREBASE_PROJECTID: "${MONKEYTYPE_FIREBASE_PROJECTID}"
+      FIREBASE_STORAGEBUCKET: "${MONKEYTYPE_FIREBASE_STORAGEBUCKET}"
+      FIREBASE_MESSAGINGSENDERID: "${MONKEYTYPE_FIREBASE_MESSAGINGSENDERID}"
+      FIREBASE_APPID: "${MONKEYTYPE_FIREBASE_APPID}"
+      RECAPTCHA_SITE_KEY: "${MONKEYTYPE_RECAPTCHA_SITE_KEY}"
+
+    networks:
+      - proxy_network
 
 secrets:
   pihole_web_password:
     file: ./runtime/server01/secrets/pihole_web_password.txt
+  cloudflare_api_token:
+    file: ./runtime/server01/secrets/cloudflare_api_token.txt
 
 networks:
   home_network:

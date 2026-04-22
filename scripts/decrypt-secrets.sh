@@ -11,6 +11,21 @@ sops --decrypt \
   --output "${RUNTIME_DIR}/pihole_web_password.txt" \
   "${SECRETS_DIR}/pihole_web_password.txt.enc"
 
-chmod 600 "${RUNTIME_DIR}/pihole_web_password.txt"
+sops --decrypt \
+  --output "${RUNTIME_DIR}/cloudflare_api_token.txt" \
+  "${SECRETS_DIR}/cloudflare_api_token.txt.enc"
 
-echo "Decrypted Pi-hole secrets to ${RUNTIME_DIR}"
+sops --decrypt \
+  --output "${RUNTIME_DIR}/postgres.env" \
+  "${SECRETS_DIR}/postgres.env.enc"
+
+sops --decrypt \
+  --output "${RUNTIME_DIR}/monkeytype-db.env" \
+  "${SECRETS_DIR}/monkeytype-db.env.enc"
+
+chmod 600 "${RUNTIME_DIR}/monkeytype-db.env"
+chmod 600 "${RUNTIME_DIR}/pihole_web_password.txt"
+chmod 600 "${RUNTIME_DIR}/cloudflare_api_token.txt"
+chmod 600 "${RUNTIME_DIR}/postgres.env"
+
+echo "Decrypted secrets to ${RUNTIME_DIR}"

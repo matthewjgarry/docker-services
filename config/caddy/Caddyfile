@@ -1,14 +1,16 @@
 {
-	auto_https off
+	email matthewjgarry@gmail.com
+	acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
 }
 
-:80 {
-	@search host {$SEARXNG_HOSTNAME}
-	handle @search {
-		reverse_proxy searxng:8080
-	}
+search.wormlogic.com {
+	reverse_proxy searxng:8080
+}
 
-	handle {
-		respond "Caddy is running." 200
-	}
+type.wormlogic.com {
+	reverse_proxy monkeytype-frontend:80
+}
+
+type-api.wormlogic.com {
+	reverse_proxy monkeytype-backend:5005
 }

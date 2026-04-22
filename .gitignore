@@ -37,3 +37,14 @@ config/searxng/data/*
 config/searxng/*.toml
 config/searxng/*.env
 config/searxng/*.bak
+
+# postgres data
+config/postgres/data/*
+!config/postgres/data/.gitkeep
+
+# monkeytype data
+config/monkeytype/mongodb/*
+!config/monkeytype/mongodb/.gitkeep
+
+config/monkeytype/redis/*
+!config/monkeytype/redis/.gitkeep
