@@ -1,0 +1,14 @@
+{
+	auto_https off
+}
+
+:80 {
+	@search host {$SEARXNG_HOSTNAME}
+	handle @search {
+		reverse_proxy searxng:8080
+	}
+
+	handle {
+		respond "Caddy is running." 200
+	}
+}

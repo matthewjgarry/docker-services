@@ -16,12 +16,10 @@ services:
       TZ: "${TZ}"
       FTLCONF_dns_listeningMode: "ALL"
       WEBPASSWORD_FILE: "pihole_web_password"
-      # Uncomment only if you use custom dnsmasq config files:
       # FTLCONF_misc_etc_dnsmasq_d: "true"
 
     volumes:
       - ./config/pihole/etc-pihole:/etc/pihole
-      # Uncomment only if using custom dnsmasq config files:
       # - ./config/pihole/etc-dnsmasq.d:/etc/dnsmasq.d
 
     secrets:
@@ -36,6 +34,44 @@ services:
       home_network:
         ipv4_address: "${PIHOLE_IPV4_ADDRESS}"
 
+  caddy:
+    container_name: caddy
+    image: caddy:latest
+    restart: unless-stopped
+
+    ports:
+      - "8080:80"
+      - "8443:443"
+
+    environment:
+      TZ: "${TZ}"
+      SEARXNG_HOSTNAME: "${SEARXNG_HOSTNAME}"
+
+    volumes:
+      - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./config/caddy/data:/data
+      - ./config/caddy/config:/config
+
+    networks:
+      - proxy_network
+
+  searxng:
+    container_name: searxng
+    image: searxng/searxng:latest
+    restart: unless-stopped
+
+    environment:
+      TZ: "${TZ}"
+      SEARXNG_BASE_URL: "${SEARXNG_BASE_URL}"
+      SEARXNG_SECRET: "${SEARXNG_SECRET}"
+
+    volumes:
+      - ./config/searxng/:/etc/searxng/
+      - ./config/searxng/data:/var/cache/searxng
+
+    networks:
+      - proxy_network
+
 secrets:
   pihole_web_password:
     file: ./runtime/server01/secrets/pihole_web_password.txt
@@ -49,3 +85,6 @@ networks:
       config:
         - subnet: "${PIHOLE_SUBNET}"
           gateway: "${PIHOLE_GATEWAY}"
+
+  proxy_network:
+    driver: bridge

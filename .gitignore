@@ -10,7 +10,7 @@ runtime/
 env/*.env
 !env/*.example
 
-# persistent service data
+# persistent Pi-hole data
 config/pihole/etc-pihole/*
 !config/pihole/etc-pihole/.gitkeep
 
@@ -20,6 +20,17 @@ config/pihole/etc-dnsmasq.d/*
 # local backup copies
 config/pihole/etc-pihole.bak.*
 
+# persistent Caddy data
+config/caddy/data/*
+!config/caddy/data/.gitkeep
+
+config/caddy/config/*
+!config/caddy/config/.gitkeep
+
 # misc
 *.log
 .DS_Store
+
+# persistent SearXNG data
+config/searxng/data/*
+!config/searxng/data/.gitkeep

@@ -15,4 +15,4 @@ fi
 "${SCRIPT_DIR}/decrypt-secrets.sh"
 "${SCRIPT_DIR}/validate.sh"
 
-docker compose --env-file ./env/server01.env up -d pihole
+docker compose --env-file ./env/server01.env up -d
