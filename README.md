@@ -1,6 +1,6 @@
 # 🐳 docker-services
 
-A modular, reproducible Docker stack for a homelab — built around **secure secrets**, **internal HTTPS**, and **automation-first deployment**.
+A modular, reproducible Docker stack for a homelab — built around **secure secrets**, **internal HTTPS**, and **host-level monitoring & automation**.
 
 Pairs with host bootstrap repo:
 👉 https://github.com/matthewjgarry/linux-environments
@@ -13,6 +13,7 @@ Pairs with host bootstrap repo:
 * 🔐 **Secure by default** — SOPS + age for secrets
 * 🧩 **Composable** — consistent service patterns
 * 🌐 **Layered networking** — DNS → proxy → apps
+* 📡 **Observable** — systemd + Discord notifications
 * ⚙️ **Automated** — scripts enforce correct state
 
 ---
@@ -26,6 +27,39 @@ Pairs with host bootstrap repo:
 | 🔎 SearXNG    | Private search      | internal HTTPS                 |
 | 🗄️ Postgres  | Database            | internal only                  |
 | ⌨️ Monkeytype | Typing app          | optional (`apps` profile)      |
+
+---
+
+## 📡 Monitoring & Alerts
+
+Host-level monitoring is handled via **systemd timers**, not containers.
+
+### Included checks
+
+| Check                | Purpose                     | Frequency     |
+| -------------------- | --------------------------- | ------------- |
+| 🔄 Container Monitor | Detect state/health changes | every 1 min   |
+| 🚀 Startup Check     | Validate stack after boot   | on boot       |
+| 💾 Disk Check        | Prevent host exhaustion     | every 6 hours |
+| 📦 Image Check       | Detect new container images | daily         |
+
+### Notifications
+
+* 📣 Sent via **Discord webhooks**
+* 🧾 JSON embed format (structured, readable)
+* 🔀 Separate channel from system bootstrap alerts
+
+Webhook location:
+
+```text
+~/.config/docker-services/discord-webhook
+```
+
+Install monitoring:
+
+```bash
+./scripts/install-monitoring-units.sh
+```
 
 ---
 
@@ -103,13 +137,13 @@ MONKEYTYPE_API_HOSTNAME=type-api.wormlogic.com
 
 * 🔎 SearXNG
 
-  ```text
+  ```
   https://search.wormlogic.com
   ```
 
 * ⌨️ Monkeytype
 
-  ```text
+  ```
   https://type.wormlogic.com
   ```
 
@@ -126,10 +160,11 @@ Requires internal DNS (OPNsense):
 ```text
 compose.yaml
 env/
-secrets/
 config/
+secrets/
 runtime/      # ignored
 scripts/
+systemd/      # host-level monitoring units
 ```
 
 ---
@@ -140,6 +175,7 @@ scripts/
 * No unnecessary host port exposure
 * One database/user per app (future-ready)
 * Optional services grouped via **Compose profiles**
+* Monitoring handled at **host level (systemd)**
 
 ---
 
@@ -147,6 +183,7 @@ scripts/
 
 * Internal HTTPS via **Cloudflare DNS-01**
 * No public exposure yet (VPN planned)
+* Monitoring runs outside Docker for reliability
 * Optional features (Firebase, email, etc.) are disabled by default
 
 ---
@@ -154,9 +191,9 @@ scripts/
 ## 🔜 Next
 
 * 🔐 VPN access layer
-* 🤖 n8n integration
-* 💾 Backup strategy
-* 🌍 selective public exposure
+* 🤖 n8n automation
+* 💾 Backup strategy + verification
+* 🌍 Selective public exposure
 
 ---
 
