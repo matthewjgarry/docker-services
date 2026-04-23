@@ -5,32 +5,65 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 MACHINE_ID="${MACHINE_ID:-server01}"
 ENV_FILE="${REPO_ROOT}/env/${MACHINE_ID}.env"
+N8N_ENV_FILE="${REPO_ROOT}/runtime/${MACHINE_ID}/secrets/n8n.env"
 
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/lib/notify-discord.sh"
 
-log_step() {
-  echo "▶ $1"
-}
+if [[ -f "${ENV_FILE}" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "${ENV_FILE}"
+  set +a
+fi
 
-log_info() {
-  echo "• $1"
-}
+if [[ -f "${N8N_ENV_FILE}" ]]; then
+  set -a
+  # shellcheck source=/dev/null
+  source "${N8N_ENV_FILE}"
+  set +a
+fi
 
-log_success() {
-  echo "✓ $1"
-}
+log_step() { echo "▶ $1"; }
+log_info() { echo "• $1"; }
+log_success() { echo "✓ $1"; }
+log_warn() { echo "⚠ $1"; }
+log_error() { echo "✗ $1"; }
 
-log_warn() {
-  echo "⚠ $1"
-}
+emit_n8n_event() {
+  local severity="$1"
+  local title="$2"
+  local message="$3"
 
-log_error() {
-  echo "✗ $1"
+  if [[ -z "${N8N_EVENT_WEBHOOK_URL:-}" ]]; then
+    log_warn "N8N_EVENT_WEBHOOK_URL is not set; skipping n8n event"
+    return 0
+  fi
+
+  if [[ ! -x "${SCRIPT_DIR}/emit-event.sh" ]]; then
+    log_warn "emit-event.sh is missing or not executable; skipping n8n event"
+    return 0
+  fi
+
+  if ! "${SCRIPT_DIR}/emit-event.sh" \
+    "docker-services" \
+    "startup-check" \
+    "${severity}" \
+    "${title}" \
+    "${message}" \
+    "docker"; then
+    log_warn "Failed to emit n8n event"
+  else
+    log_info "Emitted n8n event successfully"
+  fi
 }
 
 if [[ ! -f "${ENV_FILE}" ]]; then
   log_error "Missing ${ENV_FILE}"
+  emit_n8n_event \
+    "error" \
+    "Startup Check Failed" \
+    "docker-services startup check could not find env file: ${ENV_FILE}"
   exit 1
 fi
 
@@ -41,13 +74,12 @@ docker compose --env-file "${ENV_FILE}" --profile apps config >/dev/null
 log_success "docker-compose configuration is valid"
 
 log_step "Checking service state..."
-
 status_lines="$(
   docker compose --env-file "${ENV_FILE}" --profile apps ps --format json \
-    | jq -r '
-        if type == "array" then .[] else . end
-        | "\(.Name // .Service // "unknown")\t\(.State // .Status // "unknown")\t\(.Health // "none")"
-      '
+  | jq -r '
+      if type == "array" then .[] else . end
+      | "\(.Name // .Service // "unknown")\t\(.State // .Status // "unknown")\t\(.Health // "none")"
+    '
 )"
 
 if [[ -z "${status_lines}" ]]; then
@@ -56,6 +88,10 @@ if [[ -z "${status_lines}" ]]; then
     "Startup Check Failed" \
     "docker-services startup check found no services." \
     "docker-startup-check"
+  emit_n8n_event \
+    "error" \
+    "Startup Check Failed" \
+    "docker-services startup check found no services."
   exit 1
 fi
 
@@ -87,6 +123,12 @@ if [[ -n "${bad_lines}" ]]; then
     "Startup Check Warning" \
     "docker-services startup check found services not fully healthy.\n\n${bad_lines}" \
     "docker-startup-check"
+
+  emit_n8n_event \
+    "warning" \
+    "Startup Check Warning" \
+    "docker-services startup check found services not fully healthy.\n\n${bad_lines}"
+
   exit 1
 fi
 
@@ -96,3 +138,8 @@ send_discord_success \
   "Startup Check Passed" \
   "docker-services startup check passed.\n\n${summary_lines}" \
   "docker-startup-check"
+
+emit_n8n_event \
+  "ok" \
+  "Startup Check Passed" \
+  "docker-services startup check passed.\n\n${summary_lines}"

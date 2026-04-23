@@ -23,6 +23,11 @@ sops --decrypt \
   --output "${RUNTIME_DIR}/monkeytype-db.env" \
   "${SECRETS_DIR}/monkeytype-db.env.enc"
 
+sops --decrypt \
+  --output "${RUNTIME_DIR}/n8n.env" \
+  "${SECRETS_DIR}/n8n.env.enc"
+
+chmod 600 "${RUNTIME_DIR}/n8n.env"
 chmod 600 "${RUNTIME_DIR}/monkeytype-db.env"
 chmod 600 "${RUNTIME_DIR}/pihole_web_password.txt"
 chmod 600 "${RUNTIME_DIR}/cloudflare_api_token.txt"

@@ -103,6 +103,9 @@ services:
     container_name: n8n
     image: n8nio/n8n:latest
     restart: unless-stopped
+    env_file:
+      - ./env/server01.env
+      - ./runtime/server01/secrets/n8n.env
     environment:
       TZ: "${TZ}"
       N8N_HOST: "${N8N_HOSTNAME}"
