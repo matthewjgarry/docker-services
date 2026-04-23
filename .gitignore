@@ -53,3 +53,6 @@ config/monkeytype/redis/*
 runtime/server01/monitor/*
 !runtime/server01/monitor/.gitkeep
 
+# n8n runtime data
+config/n8n/data/*
+!config/n8n/data/.gitkeep

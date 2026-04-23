@@ -14,3 +14,7 @@ type.wormlogic.com {
 type-api.wormlogic.com {
 	reverse_proxy monkeytype-backend:5005
 }
+
+automate.wormlogic.com {
+	reverse_proxy n8n:5678
+}
