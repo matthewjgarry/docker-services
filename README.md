@@ -1,206 +1,395 @@
-# 🐳 docker-services
+# 🐳 docker-services — Automated Container Platform
 
-A modular, reproducible Docker stack for a homelab — built around **secure secrets**, **internal HTTPS**, and **host-level monitoring & automation**.
-
-Pairs with host bootstrap repo:
-👉 https://github.com/matthewjgarry/linux-environments
+> Declarative Docker environment with integrated monitoring, alerting, and event-driven automation.
 
 ---
 
-## 🧠 Philosophy
+## 🚀 Overview
 
-* 🔁 **Reproducible** — rebuild everything from scratch
-* 🔐 **Secure by default** — SOPS + age for secrets
-* 🧩 **Composable** — consistent service patterns
-* 🌐 **Layered networking** — DNS → proxy → apps
-* 📡 **Observable** — systemd + Discord notifications
-* ⚙️ **Automated** — scripts enforce correct state
+This repository manages your **container runtime layer**, including:
 
----
-
-## 🏗️ Current Stack
-
-| Service       | Purpose             | Notes                          |
-| ------------- | ------------------- | ------------------------------ |
-| 🧱 Pi-hole    | DNS filtering       | macvlan + static IP (OPNsense) |
-| 🌐 Caddy      | Reverse proxy + TLS | Cloudflare DNS-01              |
-| 🔎 SearXNG    | Private search      | internal HTTPS                 |
-| 🗄️ Postgres  | Database            | internal only                  |
-| ⌨️ Monkeytype | Typing app          | optional (`apps` profile)      |
+* 🐳 Docker Compose orchestration
+* 📡 Monitoring + health checks
+* 🔔 Event emission into n8n
+* 🧠 Integration with centralized alerting + reporting
+* 🔐 Local secret management (no secrets in Git)
 
 ---
 
-## 📡 Monitoring & Alerts
+## ⚠️ Current State
 
-Host-level monitoring is handled via **systemd timers**, not containers.
+This project is operational for the current homelab, but it is **not yet fully self-deployable**.
 
-### Included checks
+It currently assumes:
 
-| Check                | Purpose                     | Frequency     |
-| -------------------- | --------------------------- | ------------- |
-| 🔄 Container Monitor | Detect state/health changes | every 1 min   |
-| 🚀 Startup Check     | Validate stack after boot   | on boot       |
-| 💾 Disk Check        | Prevent host exhaustion     | every 6 hours |
-| 📦 Image Check       | Detect new container images | daily         |
+- host bootstrap is handled by `linux-environments`
+- secrets are restored locally
+- n8n is already configured
+- Postgres schema exists
+- Discord webhooks are created manually
+- internal DNS points service hostnames at the Docker host
 
-### Notifications
+The long-term goal is full rebuild-from-scratch automation, but this repo still has manual setup steps by design.
 
-* 📣 Sent via **Discord webhooks**
-* 🧾 JSON embed format (structured, readable)
-* 🔀 Separate channel from system bootstrap alerts
+---
 
-Webhook location:
+## 🏗️ Architecture
 
 ```text
-~/.config/docker-services/discord-webhook
+                ┌──────────────────────────────┐
+                │     linux-environments       │
+                │ (host bootstrap + services)  │
+                └──────────────┬───────────────┘
+                               │
+                               ▼
+                ┌──────────────────────────────┐
+                │       docker-services        │
+                │   (this repository)          │
+                │                              │
+                │  • docker compose            │
+                │  • monitoring scripts        │
+                │  • systemd timers            │
+                └──────────────┬───────────────┘
+                               │
+                               ▼
+                ┌──────────────────────────────┐
+                │        emit-event.sh         │
+                │  (structured event output)   │
+                └──────────────┬───────────────┘
+                               │
+                               ▼
+                ┌──────────────────────────────┐
+                │             n8n              │
+                │                              │
+                │  • dedupe / suppression      │
+                │  • escalation logic          │
+                │  • recovery detection        │
+                │  • routing decisions         │
+                └──────────────┬───────────────┘
+                               │
+              ┌────────────────┴───────────────┐
+              ▼                                ▼
+    ┌──────────────────────┐        ┌────────────────────────┐
+    │      Postgres        │        │        Discord         │
+    │                      │        │                        │
+    │  incidents           │        │  🚨 alerts             │
+    │  incident_events     │        │  🐳 containers         │
+    │                      │        │  📊 reports            │
+    └──────────────────────┘        └────────────────────────┘
 ```
 
-Install monitoring:
+---
+
+## ⚙️ Core Responsibilities
+
+### 🐳 Container Orchestration
+
+* Centralized `docker compose` configuration
+* Multi-service management
+* Clean startup / shutdown lifecycle
+
+---
+
+### 📡 Monitoring System
+
+Systemd timers execute checks:
+
+| Check            | Purpose                      |
+| ---------------- | ---------------------------- |
+| 🩺 startup-check | validate services after boot |
+| 📊 monitor       | continuous health checks     |
+| 💽 disk-check    | disk usage alerts            |
+| 🐳 image-check   | stale container detection    |
+
+---
+
+### 🔔 Event Emission
+
+All checks emit structured events via:
 
 ```bash
+scripts/emit-event.sh
+```
+
+Example:
+
+```json
+{
+  "source": "docker-services",
+  "hostname": "server01",
+  "service": "docker",
+  "check_name": "container-health",
+  "severity": "error",
+  "title": "Container failure",
+  "message": "nginx is unhealthy"
+}
+```
+
+---
+
+## 🔗 n8n Integration
+
+Events are sent to:
+
+```text
+$N8N_EVENT_WEBHOOK_URL
+```
+
+n8n handles:
+
+* 🧹 deduplication
+* 🔁 escalation
+* ♻️ recovery detection
+* 🗄️ Postgres persistence
+* 🚨 alert routing
+* 📊 daily + weekly summaries
+
+---
+
+## 🧠 Event Flow
+
+```text
+docker-services
+  ↓
+emit-event.sh
+  ↓
+n8n webhook
+  ↓
+Code (normalize + dedupe)
+  ↓
+Postgres
+  ├─ incidents (active state)
+  └─ incident_events (history)
+  ↓
+IF (alert logic)
+  ↓
+Discord alerts + reports
+```
+
+---
+
+## 🔐 Secrets & Configuration
+
+Secrets are stored locally:
+
+```text
+~/.config/docker-services/
+  ├─ discord-webhook
+  ├─ n8n-webhook
+```
+
+Environment config:
+
+```text
+env/server01.env
+```
+
+---
+
+## 🧱 Reproducibility Model
+
+Designed for rebuild flow:
+
+```text
+1. bootstrap host (linux-environments)
+2. clone docker-services
+3. restore secrets
+4. install monitoring units
+5. start containers
+```
+
+---
+
+## 🛠️ Installation
+
+```bash
+git clone https://github.com/matthewjgarry/docker-services.git
+cd docker-services
+cp env/example.env env/server01.env
 ./scripts/install-monitoring-units.sh
+docker compose --env-file env/server01.env up -d
 ```
 
 ---
 
-## 🌐 Networking
+## 🧪 Testing
 
-```text
-LAN / OPNsense
-      │
-   Pi-hole (DNS)
-      │
-Docker Host
-  ├── Caddy (TLS + routing)
-  └── Services (internal)
-```
-
-* Pi-hole is **not proxied**
-* Caddy handles **all HTTPS**
-* Apps live on an internal Docker network
-* Services are exposed via **internal DNS + valid certs**
-
----
-
-## 🔐 Secrets
-
-Managed with:
-
-* 🔑 age
-* 🛡️ SOPS
-
-```text
-secrets/   → encrypted
-runtime/   → decrypted (ignored)
-```
-
-Decrypt before running:
+### Emit test event
 
 ```bash
-./scripts/decrypt-secrets.sh
+./scripts/emit-event.sh \
+  "docker-services" \
+  "test-check" \
+  "error" \
+  "Test Event" \
+  "This is a test" \
+  "docker"
 ```
 
 ---
 
-## ⚙️ Environment
-
-Per-host config:
+### Run startup check
 
 ```bash
-cp env/server01.env.example env/server01.env
-```
-
-Example (trimmed):
-
-```dotenv
-TZ=America/New_York
-
-SEARXNG_HOSTNAME=search.wormlogic.com
-MONKEYTYPE_HOSTNAME=type.wormlogic.com
-MONKEYTYPE_API_HOSTNAME=type-api.wormlogic.com
+sudo systemctl start docker-services-startup-check.service
 ```
 
 ---
 
-## 🚀 Usage
+### View logs
 
 ```bash
-./scripts/up.sh        # core services
-./scripts/up-apps.sh   # core + optional apps
-./scripts/down.sh      # stop everything
-./scripts/validate.sh  # config checks
+journalctl -u docker-services-monitor.service -n 50 --no-pager
 ```
 
 ---
 
-## 🔍 Access
+## 🚨 Alerting Model
 
-* 🔎 SearXNG
+### Local
 
-  ```
-  https://search.wormlogic.com
-  ```
+* container-level Discord webhook
 
-* ⌨️ Monkeytype
+### Centralized (n8n)
 
-  ```
-  https://type.wormlogic.com
-  ```
+* alerts-only channel 🚨
+* deduplicated
+* escalated
+* state-aware
 
-Requires internal DNS (OPNsense):
+---
+
+## 📊 Monitoring Philosophy
+
+### 🔕 Signal > Noise
+
+* suppression windows
+* escalation thresholds
+
+### 🧠 Event-Driven
+
+Everything is:
+
+```
+event → decision → action
+```
+
+### ♻️ System-Oriented
+
+This is not just monitoring—it is a **feedback loop**.
+
+---
+
+## 🧯 What Breaks If Misconfigured?
+
+### 🌐 Caddy / DNS
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| Service does not load | hostname missing from internal DNS | add DNS record or wildcard |
+| Cert does not issue | Cloudflare token missing/invalid | verify Caddy env secret |
+| New route ignored | Caddy still using old config | `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile` |
+
+---
+
+### 🔐 Secrets
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| Compose warns variables are blank | env file not loaded | use `--env-file env/server01.env` |
+| Service starts but auth fails | decrypted runtime secret missing | run decrypt script |
+| n8n encryption error | key changed after first boot | preserve `N8N_ENCRYPTION_KEY` |
+
+---
+
+### 🧠 n8n
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| Webhook returns 404 | workflow inactive or test URL expired | activate workflow and use `/webhook/events` |
+| Events arrive but no alert | suppressed or severity not alert-worthy | check Code output + IF node |
+| Alert IF always false | previous node replaced `$json` | reference `Code - Normalize Incident` directly |
+| Daily summary all zeroes | Code node wired to schedule instead of Postgres | connect `Schedule → Postgres → Code` only |
+
+---
+
+### 🗄️ Postgres
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| n8n cannot connect | using `localhost` | use host `postgres` |
+| Table missing | schema not created | run SQL setup |
+| Active incident missing | upsert node not reached | check workflow execution path |
+| History empty | `incident_events` node not reached | verify it runs after incident upsert |
+
+---
+
+### 📡 Monitoring
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| No n8n event from script | `N8N_EVENT_WEBHOOK_URL` missing | add runtime/env secret |
+| No Discord from systemd | service environment differs from shell | load env/secrets in script |
+| Systemd unit not found | user vs system unit mismatch | try `systemctl --user` |
+| Monitor sends nothing | no state change detected | force a container stop/start test |
+
+---
+
+### 🐳 Docker Networking
+
+| Symptom | Likely Cause | Fix |
+|---|---|---|
+| n8n cannot reach Postgres | wrong host | use `postgres:5432` inside Docker network |
+| Host cannot reach Postgres | port intentionally not published | use `docker compose exec postgres psql ...` |
+| Container route fails through Caddy | service not on proxy network | attach service to Caddy network |
+
+---
+
+## 📈 Future Direction
+
+* 🔁 auto-remediation workflows
+* 📊 dashboards (Grafana)
+* 📉 trend analysis
+* 🔐 improved secret management
+* 🚀 full self-deployment pipeline
+
+---
+
+## ⚡ TL;DR
 
 ```text
-*.wormlogic.com → <docker-host-ip>
+Compose → Monitor → Emit → n8n → Store → Alert → Report
+
+linux-environments
+        │
+        ▼
+docker-services ──► emit-event.sh
+        │
+        ▼
+       n8n
+   (dedupe / logic)
+        │
+   ┌────┴────┐
+   ▼         ▼
+Postgres   Discord
+(state)    (alerts + reports)
 ```
 
 ---
 
-## 🧩 Structure
+## 🧭 Related
 
-```text
-compose.yaml
-env/
-config/
-secrets/
-runtime/      # ignored
-scripts/
-systemd/      # host-level monitoring units
-```
+* linux-environments → host bootstrap + system setup
+* n8n → automation + orchestration
 
 ---
 
-## 🧠 Patterns
+## 🧑‍💻 Author
 
-* Services communicate via **Docker network**
-* No unnecessary host port exposure
-* One database/user per app (future-ready)
-* Optional services grouped via **Compose profiles**
-* Monitoring handled at **host level (systemd)**
+Matthew Garry
 
 ---
 
-## ⚠️ Notes
+## 🪪 License
 
-* Internal HTTPS via **Cloudflare DNS-01**
-* No public exposure yet (VPN planned)
-* Monitoring runs outside Docker for reliability
-* Optional features (Firebase, email, etc.) are disabled by default
-
----
-
-## 🔜 Next
-
-* 🔐 VPN access layer
-* 🤖 n8n automation
-* 💾 Backup strategy + verification
-* 🌍 Selective public exposure
-
----
-
-## 🤝 Related
-
-👉 https://github.com/matthewjgarry/linux-environments
-
----
-
-💡 *If you can’t rebuild it, you don’t own it.*
+MIT
