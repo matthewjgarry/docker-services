@@ -164,6 +164,10 @@ services:
       EMAIL_USER: "${MONKEYTYPE_EMAIL_USER}"
       EMAIL_PASS: "${MONKEYTYPE_EMAIL_PASS}"
 
+    volumes:
+      - ./config/monkeytype/backend-configuration.json:/app/backend-configuration.json:ro
+      - ./runtime/server01/secrets/monkeytype-serviceAccountKey.json:/app/backend/src/credentials/serviceAccountKey.json:ro
+
     networks:
       - proxy_network
 

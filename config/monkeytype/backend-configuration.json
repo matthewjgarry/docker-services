@@ -1,0 +1,8 @@
+{
+  "users": {
+    "signUp": true,
+    "profiles": {
+      "enabled": true
+    }
+  }
+}
