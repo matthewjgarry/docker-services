@@ -186,6 +186,112 @@ env/server01.env
 
 ---
 
+## 🐒⌨️ Monkeytype Integration
+
+Self-hosted Monkeytype with local data persistence and automated reporting via n8n.
+
+### Services
+
+- `monkeytype-frontend`
+- `monkeytype-backend`
+- `monkeytype-mongodb`
+- `monkeytype-redis`
+
+### Authentication
+
+- Firebase handles login.
+- MongoDB stores local Monkeytype data.
+- Email verification is disabled for local use.
+
+### Data
+
+Typing results are stored in MongoDB:
+
+```text
+database: monkeytype
+collection: results
+```
+
+Each test stores:
+
+- WPM / raw WPM
+- Accuracy
+- Consistency
+- Duration
+- Timestamp
+- Per-second performance data
+
+### Reporting
+
+Monkeytype reporting is handled through n8n.
+
+```text
+MongoDB → n8n → Discord
+```
+
+Reports are generated using the n8n MongoDB node and formatted with a Code node.
+
+### Reports
+
+#### 🐒⌨️ Daily Report
+
+- Tests completed
+- Average WPM
+- Best WPM
+- Accuracy
+- Time typed
+
+#### 🐒📆 Weekly Report
+
+- Weekly totals
+- Weekly averages
+- Best weekly performance
+
+#### 🐒🗓️ Monthly Report
+
+- Monthly totals
+- Monthly averages
+- Long-term usage patterns
+
+#### 🐒🎆 Year-End Recap
+
+- Previous year summary
+- Total tests
+- Peak performance
+- Total time typed
+
+### Cron Schedules
+
+n8n cron format:
+
+```text
+[Second] [Minute] [Hour] [Day of Month] [Month] [Day of Week]
+```
+
+Recommended schedules:
+
+```text
+Daily:   0 5 0 * * *
+Weekly:  0 5 0 * * 0
+Monthly: 0 5 0 L * *
+Yearly:  0 5 0 1 1 *
+```
+
+### Example Output
+
+```text
+🐒⌨️ Monkeytype Daily Report
+
+User: wormlogic
+Tests: 3
+Avg WPM: 36.01
+Best WPM: 39.61
+Accuracy: 92.14%
+Time Typed: 1.5 min
+```
+
+---
+
 ## 🧱 Reproducibility Model
 
 Designed for rebuild flow:
