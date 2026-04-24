@@ -1,8 +1,22 @@
 {
-  "users": {
-    "signUp": true,
-    "profiles": {
-      "enabled": true
+  "configuration": {
+    "results": {
+      "savingEnabled": true
+    },
+    "users": {
+      "signUp": true,
+      "emailVerification": false,
+      "profiles": {
+        "enabled": true
+      }
+    },
+    "dailyLeaderboards": {
+      "enabled": true,
+      "maxResults": 250,
+      "leaderboardExpirationTimeInDays": 1
+    },
+    "leaderboards": {
+      "minTimeTyping": 0
     }
   }
 }

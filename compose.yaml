@@ -114,8 +114,10 @@ services:
       N8N_PORT: "${N8N_PORT}"
       WEBHOOK_URL: "${N8N_EDITOR_BASE_URL}"
       N8N_RUNNERS_ENABLED: "${N8N_RUNNERS_ENABLED}"
+      NODES_EXCLUDE: "[]"
     volumes:
       - ./config/n8n/data:/home/node/.n8n
+      - ./scripts:/scripts:ro
     networks:
       - proxy_network
 
@@ -165,7 +167,7 @@ services:
       EMAIL_PASS: "${MONKEYTYPE_EMAIL_PASS}"
 
     volumes:
-      - ./config/monkeytype/backend-configuration.json:/app/backend-configuration.json:ro
+      - ./config/monkeytype/backend-configuration.json:/app/backend/dist/backend-configuration.json:ro
       - ./runtime/server01/secrets/monkeytype-serviceAccountKey.json:/app/backend/src/credentials/serviceAccountKey.json:ro
 
     networks:
