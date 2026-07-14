@@ -16,17 +16,45 @@ fi
 
 cd "${REPO_ROOT}"
 
-pull_output="$(docker compose --env-file "${ENV_FILE}" --profile apps pull 2>&1 || true)"
-updated_lines="$(printf '%s\n' "${pull_output}" | grep -E 'Downloaded newer image|Pull complete|Status: Downloaded newer image' || true)"
+# --- CHECK FOR UPDATES (DO NOT PULL) ---
+PULL_OUTPUT="$(docker compose --env-file "${ENV_FILE}" --profile apps pull --dry-run 2>&1 || true)"
 
-if [[ -n "${updated_lines}" ]]; then
+# --- PARSE UPDATED SERVICES ---
+UPDATED_SERVICES="$(
+  printf '%s\n' "${PULL_OUTPUT}" \
+    | sed -nE 's/^.*(Downloading|Pulling).* ([^ ]+)$/\2/p' \
+    | sort -u
+)"
+
+COUNT="$(printf '%s\n' "${UPDATED_SERVICES}" | grep -c . || true)"
+
+# --- BUILD MESSAGE ---
+if [[ "${COUNT}" -gt 0 ]]; then
+  SERVICE_LIST="$(printf '%s\n' "${UPDATED_SERVICES}" | sed 's/^/• /' | head -n 15)"
+
+  if (( COUNT > 15 )); then
+    SERVICE_LIST+=$'\n'"• …and $((COUNT - 15)) more"
+  fi
+
+  MESSAGE=$(cat <<EOF
+Image updates available
+
+Services with updates: ${COUNT}
+
+${SERVICE_LIST}
+EOF
+)
+
   send_discord_info \
     "Image Updates Available" \
-    "docker-compose pull found newer images.\n\n${updated_lines}" \
+    "${MESSAGE}" \
     "docker-image-check"
+
 else
+  MESSAGE="All container images are up to date"
+
   send_discord_success \
     "Image Check Passed" \
-    "No newer images were found during docker compose pull." \
+    "${MESSAGE}" \
     "docker-image-check"
 fi

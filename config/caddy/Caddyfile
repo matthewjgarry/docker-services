@@ -1,5 +1,5 @@
 {
-	email matthewjgarry@gmail.com
+	email admin@wormlogic.com
 	acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
 }
 

@@ -14,14 +14,35 @@ available_space="$(printf '%s' "${usage_line}" | awk '{print $2}')"
 mount_point="$(printf '%s' "${usage_line}" | awk '{print $3}')"
 
 if (( usage_percent >= WARN_PERCENT )); then
+  message=$(cat <<EOF
+Docker services host disk usage is above threshold.
+
+Usage: ${usage_percent}%
+Available: ${available_space}
+Mount: ${mount_point}
+Threshold: ${WARN_PERCENT}%
+EOF
+)
+
   send_discord_warning \
     "Disk Usage Warning" \
-    "docker-services host disk usage is above threshold.\n\nUsage=${usage_percent}%\nAvailable=${available_space}\nMount=${mount_point}" \
+    "${message}" \
     "docker-disk-check"
+
   exit 1
 fi
 
+message=$(cat <<EOF
+Docker services disk usage is within threshold.
+
+Usage: ${usage_percent}%
+Available: ${available_space}
+Mount: ${mount_point}
+Threshold: ${WARN_PERCENT}%
+EOF
+)
+
 send_discord_info \
   "Disk Check Passed" \
-  "docker-services disk usage is within threshold.\n\nUsage=${usage_percent}%\nAvailable=${available_space}\nMount=${mount_point}" \
+  "${message}" \
   "docker-disk-check"
