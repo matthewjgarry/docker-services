@@ -43,6 +43,9 @@ services:
       - "80:80"
       - "443:443"
 
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     environment:
       TZ: "${TZ}"
       SEARXNG_HOSTNAME: "${SEARXNG_HOSTNAME}"
@@ -194,6 +197,19 @@ services:
 
     networks:
       - proxy_network
+
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    environment:
+      TZ: "${TZ}"
+    volumes:
+      - ./config/homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
 
 secrets:
   pihole_web_password:

@@ -56,3 +56,7 @@ runtime/server01/monitor/*
 # n8n runtime data
 config/n8n/data/*
 !config/n8n/data/.gitkeep
+
+# Home Assistant persistent configuration
+config/homeassistant/*
+!config/homeassistant/.gitkeep
