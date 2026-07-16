@@ -60,3 +60,8 @@ config/n8n/data/*
 # Home Assistant persistent configuration
 config/homeassistant/*
 !config/homeassistant/.gitkeep
+
+# Grocy data
+config/grocy/*
+!config/grocy/.gitkeep
+

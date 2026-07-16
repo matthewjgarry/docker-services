@@ -124,6 +124,20 @@ services:
     networks:
       - proxy_network
 
+  grocy:
+    container_name: grocy
+    image: lscr.io/linuxserver/grocy:latest
+    restart: unless-stopped
+    profiles: ["apps"]
+    environment:
+      PUID: "${PUID}"
+      PGID: "${PGID}"
+      TZ: "${TZ}"
+    volumes:
+      - ./config/grocy:/config
+    networks:
+      - proxy_network
+
   monkeytype-mongodb:
     container_name: monkeytype-mongodb
     image: mongo:latest
@@ -206,6 +220,9 @@ services:
     network_mode: host
     environment:
       TZ: "${TZ}"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
     volumes:
       - ./config/homeassistant:/config
       - /etc/localtime:/etc/localtime:ro
