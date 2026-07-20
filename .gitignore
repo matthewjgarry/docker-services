@@ -42,6 +42,11 @@ config/searxng/*.bak
 config/postgres/data/*
 !config/postgres/data/.gitkeep
 
+# ESPHome generated data and local secrets
+config/esphome/.esphome/
+config/esphome/secrets.yaml
+config/esphome/.gitignore
+
 # monkeytype data
 config/monkeytype/mongodb/*
 !config/monkeytype/mongodb/.gitkeep

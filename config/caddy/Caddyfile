@@ -26,3 +26,7 @@ ha.wormlogic.com {
 pantry.wormlogic.com {
     reverse_proxy grocy:80
 }
+
+esphome.wormlogic.com {
+    reverse_proxy esphome:6052
+}
