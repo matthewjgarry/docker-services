@@ -27,6 +27,11 @@ sops --decrypt \
   --output "${RUNTIME_DIR}/n8n.env" \
   "${SECRETS_DIR}/n8n.env.enc"
 
+sops --decrypt \
+  --output "${RUNTIME_DIR}/esphome-secrets.yaml" \
+  "${SECRETS_DIR}/esphome-secrets.yaml.enc"
+
+chmod 600 "${RUNTIME_DIR}/esphome-secrets.yaml"
 chmod 600 "${RUNTIME_DIR}/n8n.env"
 chmod 600 "${RUNTIME_DIR}/monkeytype-db.env"
 chmod 600 "${RUNTIME_DIR}/pihole_web_password.txt"

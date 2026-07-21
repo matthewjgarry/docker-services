@@ -66,6 +66,9 @@ config/n8n/data/*
 config/homeassistant/*
 !config/homeassistant/.gitkeep
 
+# Matter data
+/config/matter-server/data/
+
 # Grocy data
 config/grocy/*
 !config/grocy/.gitkeep
